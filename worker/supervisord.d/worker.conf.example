@@ -1,0 +1,7 @@
+[program:amqp-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/app/amqp/consumer.php
+autostart=true
+autorestart=true
+numprocs=1
+redirect_stderr=true

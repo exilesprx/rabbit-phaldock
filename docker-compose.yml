@@ -1,0 +1,118 @@
+version: '3'
+
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+volumes:
+  mysql:
+    driver: ${VOLUMES_DRIVER}
+
+services:
+
+### WORKER ONE ##############################################
+    worker-one:
+      build:
+        context: ./worker
+        args:
+          - PHP_VERSION=${PHP_VERSION}
+      volumes:
+        - ./worker/supervisord.d:/etc/supervisord.d
+        - ${APP_CODE_PATH_HOST}/phalcon-one/:${APP_CODE_PATH_CONTAINER}
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      environment:
+        - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+        - DOCKER_HOST=tcp://docker-in-docker:2375
+      depends_on:
+        - rabbitmq
+        - mariadb
+      networks:
+        - backend
+      links:
+        - docker-in-docker
+
+### WORKER TWO ##############################################
+    worker-two:
+      build:
+        context: ./worker
+        args:
+          - PHP_VERSION=${PHP_VERSION}
+      volumes:
+        - ./worker/supervisord.d:/etc/supervisord.d
+        - ${APP_CODE_PATH_HOST}/phalcon-two/:${APP_CODE_PATH_CONTAINER}
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      environment:
+        - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+        - DOCKER_HOST=tcp://docker-in-docker:2375
+      depends_on:
+        - rabbitmq
+        - mariadb
+      networks:
+        - backend
+      links:
+        - docker-in-docker
+
+### MariaDB ##############################################
+    mariadb:
+      build: ./mariadb
+      volumes:
+        - ${DATA_PATH_HOST}/mariadb:/var/lib/mysql
+        - ${MARIADB_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+      ports:
+        - "${MARIADB_PORT}:3306"
+      environment:
+        - MYSQL_DATABASE=${MARIADB_DATABASE}
+        - MYSQL_USER=${MARIADB_USER}
+        - MYSQL_PASSWORD=${MARIADB_PASSWORD}
+        - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      networks:
+        - backend
+
+### RabbitMQ #############################################
+    rabbitmq:
+      build: ./rabbitmq
+      ports:
+        - "${RABBITMQ_NODE_HOST_PORT}:5672"
+        - "${RABBITMQ_MANAGEMENT_HTTP_HOST_PORT}:15672"
+        - "${RABBITMQ_MANAGEMENT_HTTPS_HOST_PORT}:15671"
+      privileged: true
+      environment:
+        - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+        - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      networks:
+        - backend
+
+### Beanstalkd ###########################################
+    beanstalkd:
+      build: ./beanstalkd
+      ports:
+        - "${BEANSTALKD_HOST_PORT}:11300"
+      privileged: true
+      depends_on:
+        - worker-one
+        - worker-two
+      networks:
+        - backend
+
+### Beanstalkd Console ###################################
+    beanstalkd-console:
+      build: ./beanstalkd-console
+      ports:
+        - "${BEANSTALKD_CONSOLE_HOST_PORT}:2080"
+      depends_on:
+        - beanstalkd
+      networks:
+        - backend
+
+### Docker-in-Docker ################################################
+    docker-in-docker:
+      image: docker:dind
+      privileged: true
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      expose:
+        - 2375
+      networks:
+        - backend

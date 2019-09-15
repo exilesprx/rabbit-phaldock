@@ -1,0 +1,8 @@
+- Create a single queue
+- Create two exchanges
+    - worker-one
+    - worker-two
+- Consume from queue
+    - worker-one consumes from worker-two exchange
+- Publish to the corresponding worker exchange
+    - worker-two publishes to worker-two exchange

@@ -3,6 +3,9 @@ version: '3'
 networks:
   backend:
     driver: ${NETWORKS_DRIVER}
+  shared:
+    external:
+      name: shared
 
 volumes:
   mysql:
@@ -29,6 +32,7 @@ services:
         - mariadb
       networks:
         - backend
+        - shared
       links:
         - docker-in-docker
 
@@ -39,7 +43,6 @@ services:
         args:
           - PHP_VERSION=${PHP_VERSION}
       volumes:
-        - ./worker/supervisord.d:/etc/supervisord.d
         - ${APP_CODE_PATH_HOST}/phalcon-two/:${APP_CODE_PATH_CONTAINER}
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
@@ -51,6 +54,7 @@ services:
         - mariadb
       networks:
         - backend
+        - shared
       links:
         - docker-in-docker
 

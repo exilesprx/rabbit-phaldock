@@ -5,3 +5,14 @@ autostart=true
 autorestart=true
 numprocs=1
 redirect_stderr=true
+
+[program:queue-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/app/queue/worker.php
+autostart=true
+autorestart=true
+numprocs=1
+redirect_stderr=true
+
+[group:workers]
+programs=amqp-worker,queue-worker

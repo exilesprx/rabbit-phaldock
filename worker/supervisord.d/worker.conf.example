@@ -1,18 +1,36 @@
 [program:amqp-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/app/amqp/consumer.php
+command=php /var/www/app/Processes/consumer.php --tube=phalcon --queue=task_queue.one --exchange=worker_one
+autostart=true
+autorestart=true
+numprocs=2
+redirect_stderr=true
+
+[program:queue-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/app/Processes/worker.php --tube=phalcon
+autostart=true
+autorestart=true
+numprocs=2
+redirect_stderr=true
+
+[program:event-publisher]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/app/Processes/publisher.php --user=%(process_num)01d --version=1
 autostart=true
 autorestart=true
 numprocs=1
 redirect_stderr=true
 
-[program:queue-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/app/queue/worker.php
-autostart=true
-autorestart=true
-numprocs=1
-redirect_stderr=true
+
+[group:amqp]
+program=amqp-worker
+
+[group:queue]
+program=queue-worker
+
+[group:publishers]
+programs=event-publisher
 
 [group:workers]
 programs=amqp-worker,queue-worker

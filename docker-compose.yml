@@ -13,6 +13,28 @@ volumes:
 
 services:
 
+### Workspace Utilities ##################################
+    workspace:
+      build:
+        context: ./workspace
+        args:
+          - INSTALL_XDEBUG=${WORKSPACE_INSTALL_XDEBUG}
+          - PUID=${WORKSPACE_PUID}
+          - PGID=${WORKSPACE_PGID}
+          - PHP_VERSION=${PHP_VERSION}
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      ports:
+        - "8001:8000"
+      tty: true
+      environment:
+        - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
+      networks:
+        - frontend
+        - backend
+
 ### WORKER ONE ##############################################
     worker-one:
       build:

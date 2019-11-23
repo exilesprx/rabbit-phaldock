@@ -43,6 +43,7 @@ services:
         context: ./worker
         args:
           - PHP_VERSION=${PHP_VERSION}
+          - INSTALL_MONGO=${WORKER_INSTALL_MONGO}
       volumes:
         - ./worker/supervisord.d:/etc/supervisord.d
         - ${APP_CODE_PATH_HOST}/phalcon-one/:${APP_CODE_PATH_CONTAINER}

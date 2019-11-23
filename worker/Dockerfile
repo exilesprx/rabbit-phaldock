@@ -32,10 +32,12 @@ RUN apt-get install -y software-properties-common && \
 #--------------------------------------------------------------------------
 #
 
+ENV _APT_OPTIONS -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+
 # Install "PHP Extentions", "libraries", "Software's"
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --allow-downgrades --allow-remove-essential \
+    apt-get upgrade -y ${_APT_OPTIONS} && \
+    apt-get install -y ${_APT_OPTIONS} --allow-downgrades --allow-remove-essential \
         --allow-change-held-packages \
         php${PHP_VERSION}-cli \
         php${PHP_VERSION}-common \

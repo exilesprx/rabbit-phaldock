@@ -10,6 +10,8 @@ networks:
 volumes:
   mysql:
     driver: ${VOLUMES_DRIVER}
+  mongo:
+    driver: ${VOLUMES_DRIVER}
 
 services:
 
@@ -33,9 +35,10 @@ services:
         - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
       networks:
         - backend
+        - shared
 
-### WORKER ONE ##############################################
-    worker-one:
+### WORKER ##############################################
+    worker:
       build:
         context: ./worker
         args:
@@ -51,29 +54,7 @@ services:
       depends_on:
         - rabbitmq
         - mariadb
-      networks:
-        - backend
-        - shared
-      links:
-        - docker-in-docker
-
-### WORKER TWO ##############################################
-    worker-two:
-      build:
-        context: ./worker
-        args:
-          - PHP_VERSION=${PHP_VERSION}
-      volumes:
-        - ./worker/supervisord.d:/etc/supervisord.d
-        - ${APP_CODE_PATH_HOST}/phalcon-two/:${APP_CODE_PATH_CONTAINER}
-      extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
-      environment:
-        - PHP_IDE_CONFIG=${PHP_IDE_CONFIG}
-        - DOCKER_HOST=tcp://docker-in-docker:2375
-      depends_on:
-        - rabbitmq
-        - mariadb
+        - mongo
       networks:
         - backend
         - shared
@@ -117,8 +98,7 @@ services:
         - "${BEANSTALKD_HOST_PORT}:11300"
       privileged: true
       depends_on:
-        - worker-one
-        - worker-two
+        - worker
       networks:
         - backend
 
@@ -131,6 +111,34 @@ services:
         - beanstalkd
       networks:
         - backend
+
+### MongoDB ##############################################
+    mongo:
+      build: ./mongo
+      ports:
+        - "${MONGODB_PORT}:27017"
+      volumes:
+        - ${DATA_PATH_HOST}/mongo:/data/db
+      networks:
+        - backend
+
+### MongoWebUI ################################################
+    mongo-webui:
+      build:
+        context: ./mongo-webui
+      restart: always
+      environment:
+        - ROOT_URL=${MONGO_WEBUI_ROOT_URL}
+        - MONGO_URL=${MONGO_WEBUI_MONGO_URL}
+        - INSTALL_MONGO=${MONGO_WEBUI_INSTALL_MONGO}
+      volumes:
+        - ${DATA_PATH_HOST}/mongo-webui:/data/db
+      ports:
+        - "${MONGO_WEBUI_PORT}:3000"
+      networks:
+        - backend
+      depends_on:
+        - mongo
 
 ### Docker-in-Docker ################################################
     docker-in-docker:
